@@ -176,30 +176,28 @@ public class Architecture {
 		commandsList.add("addRegReg"); // 0
 		commandsList.add("addMemReg"); // 1
 		commandsList.add("addRegMem"); // 2
-		commandsList.add("addImmMem"); // 3
-		commandsList.add("subRegReg"); // 4
-		commandsList.add("subMemReg"); // 5
-		commandsList.add("subRegMem"); // 6
-		commandsList.add("subImmMem"); // 7
-		commandsList.add("imulMemReg"); // 8
-		commandsList.add("imulRegMem"); // 9
-		commandsList.add("imulRegReg"); // 10
-		commandsList.add("moveMemReg"); // 11
-		commandsList.add("moveRegMem"); // 12
-		commandsList.add("moveRegReg"); // 13
-		commandsList.add("moveImmReg"); // 14
-		commandsList.add("incReg"); // 15
-		commandsList.add("incMem"); // 16
-		commandsList.add("jmp"); // 17
-		commandsList.add("jn"); // 18
-		commandsList.add("jz"); // 19
-		commandsList.add("jnz"); // 20
-		commandsList.add("jeq"); // 21
-		commandsList.add("jgt"); // 22
-		commandsList.add("jlw"); // 23
-		commandsList.add("ldi"); // 24
-		commandsList.add("read"); // 25
-		commandsList.add("store"); // 26
+		commandsList.add("subRegReg"); // 3
+		commandsList.add("subMemReg"); // 4
+		commandsList.add("subRegMem"); // 5
+		commandsList.add("imulMemReg"); // 6
+		commandsList.add("imulRegMem"); // 7
+		commandsList.add("imulRegReg"); // 8
+		commandsList.add("moveMemReg"); // 9
+		commandsList.add("moveRegMem"); // 10
+		commandsList.add("moveRegReg"); // 11
+		commandsList.add("moveImmReg"); // 12
+		commandsList.add("incReg"); // 13
+		commandsList.add("incMem"); // 14
+		commandsList.add("jmp"); // 15
+		commandsList.add("jn"); // 16
+		commandsList.add("jz"); // 17
+		commandsList.add("jnz"); // 18
+		commandsList.add("jeq"); // 19
+		commandsList.add("jgt"); // 20
+		commandsList.add("jlw"); // 21
+		commandsList.add("ldi"); // 22
+		commandsList.add("read"); // 23
+		commandsList.add("store"); // 24
 	}
 
 	/**
@@ -341,40 +339,6 @@ public class Architecture {
 		incrementarPC();
 	}
 
-	public void addImmMem() {
-		incrementarPC();
-
-		memory.read();
-		RPG.store();// RPG contem o valor de Imm
-
-		ula.inc();
-		ula.internalRead(1);
-		IR.internalStore();
-		IR.read();
-		PC.store(); // now PC points to the second parameter
-
-		RPG.internalRead();
-		ula.store(0);
-
-		memory.read();// extbus1 contem o endereço do segundo parametro
-		memory.store();
-		memory.read(); // valor do segudo parametro no extbus1
-		IR.store();
-		IR.internalRead();
-		ula.internalStore(1);
-
-		ula.add();
-		ula.read(1);
-		setStatusFlags(intbus1.get());
-
-		ula.internalRead(1);
-		IR.internalStore();
-		IR.read();
-		memory.store();
-
-		incrementarPC();
-	}
-
 	public void subRegReg() {
 		incrementarPC();
 
@@ -459,40 +423,6 @@ public class Architecture {
 
 		ula.read(1);
 		setStatusFlags(intbus1.get());
-
-		ula.internalRead(1);
-		IR.internalStore();
-		IR.read();
-		memory.store();
-
-		incrementarPC();
-	}
-
-	public void subImmMem() {
-		incrementarPC();
-
-		memory.read();
-		RPG.store();
-
-		ula.inc();
-		ula.internalRead(1);
-		IR.internalStore();
-		IR.read();
-		PC.store(); // now PC points to the second parameter
-
-		RPG.internalRead(); // valor imm inserido no intbus1
-		ula.store(0);
-
-		memory.read();
-		memory.store();
-		memory.read();
-		IR.store();
-		IR.internalRead();
-		ula.internalStore(1);
-
-		ula.sub();
-		ula.read(1);
-		setStatusFlags(intbus2.get());
 
 		ula.internalRead(1);
 		IR.internalStore();
@@ -920,12 +850,12 @@ public class Architecture {
 		IR.internalStore();
 		IR.read();
 		PC.store();
-		
+
 		memory.read();
 		memory.store(); // the address is in the memory. Now we must to send the data
 		demuxRegisterRead();
 		memory.store(); // the data is now stored
-		
+
 		incrementarPC();
 	}
 
@@ -937,15 +867,15 @@ public class Architecture {
 		ula.read(1);
 		setStatusFlags(intbus1.get());
 		RPG.internalStore();
-				
+
 		incrementarPC();
 	}
+
 	public void add() {
 		incrementarPC();
-		
+
 		RPG.internalRead();
 		ula.store(0); // the rpg value is in ULA (0). This is the first parameter
-		
 
 		memory.read(); // the parameter is now in the external bus.
 						// but the parameter is an address and we need the value
@@ -958,7 +888,7 @@ public class Architecture {
 		; // the operation result is in the internalbus 2
 		setStatusFlags(intbus1.get()); // changing flags due the end of the operation
 		RPG.internalStore(); // now the add is complete
-		
+
 		incrementarPC();
 	}
 
@@ -967,7 +897,7 @@ public class Architecture {
 
 		RPG.internalRead();
 		ula.store(0); // the rpg value is in ULA (0). This is the first parameter
-		
+
 		memory.read(); // the parameter is now in the external bus.
 						// but the parameter is an address and we need the value
 		memory.read(); // now the value is in the external bus
@@ -979,7 +909,7 @@ public class Architecture {
 		; // the operation result is in the internalbus 2
 		setStatusFlags(intbus1.get()); // changing flags due the end of the operation
 		RPG.internalStore(); // now the sub is complete
-	
+
 		incrementarPC();
 	}
 
@@ -1078,75 +1008,69 @@ public class Architecture {
 				addRegMem();
 				break;
 			case 3:
-				addImmMem();
-				break;
-			case 4:
 				subRegReg();
 				break;
-			case 5:
+			case 4:
 				subMemReg();
 				break;
-			case 6:
+			case 5:
 				subRegMem();
 				break;
-			case 7:
-				subImmMem();
-				break;
-			case 8:
+			case 6:
 				imulMemReg();
 				break;
-			case 9:
+			case 7:
 				imulRegMem();
 				break;
-			case 10:
+			case 8:
 				imulRegReg();
 				break;
-			case 11:
+			case 9:
 				moveMemReg();
 				break;
-			case 12:
+			case 10:
 				moveRegMem();
 				break;
-			case 13:
+			case 11:
 				moveRegReg();
 				break;
-			case 14:
+			case 12:
 				moveImmReg();
 				break;
-			case 15:
+			case 13:
 				incReg();
 				break;
-			case 16:
+			case 14:
 				incMem();
 				break;
-			case 17:
+			case 15:
 				jmp();
 				break;
-			case 18:
+			case 16:
 				jn();
 				break;
-			case 19:
+			case 17:
 				jz();
 				break;
-			case 20:
+			case 18:
 				jnz();
 				break;
-			case 21:
+			case 19:
 				jeq();
 				break;
-			case 22:
+			case 20:
 				jgt();
 				break;
-			case 23:
+			case 21:
 				jlw();
 				break;
-			case 24:
+			case 22:
 				ldi();
 				break;
-			case 25:
+			case 23:
 				read();
 				break;
-			case 26:
+			case 24:
 				store();
 				break;
 			default:
