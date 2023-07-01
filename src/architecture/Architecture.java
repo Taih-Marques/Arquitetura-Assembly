@@ -262,13 +262,12 @@ public class Architecture {
 		// PC.read();
 		memory.read(); // the first register id is now in the external bus.
 		demux.put(extbus1.get());
+		demuxRegisterInternalRead();
+		ula.store(0);
 
 		incrementarPC();
 
-		PC.read();
 		memory.read(); // the second register id is now in the external bus.
-		demuxRegisterInternalRead();
-		ula.store(0);
 
 		demux.put(extbus1.get());
 		demuxRegisterInternalRead();
