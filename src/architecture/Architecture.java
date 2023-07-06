@@ -591,16 +591,18 @@ public class Architecture {
 		incrementarPC();
 
 		memory.read();
-		IR.store();
-		IR.internalRead();
-		ula.internalStore(0);
+		demux.put(extbus1.get());
 
 		incrementarPC();
 
+		extbus1.put(demux.get());
+		IR.store();
+
+		PC.read();
 		memory.read();
-		demux.put(extbus1.get());
-		ula.read(0);
-		registersInternalStore();
+		demux.put(extbus1.get()); // points to the correct register
+		IR.read();
+		demuxRegisterStore(); // performs an internal store for the register identified into demux bus
 
 		incrementarPC();
 	}
@@ -917,14 +919,6 @@ public class Architecture {
 
 	public ArrayList<Register> getRegistersList() {
 		return registersList;
-	}
-
-	/**
-	 * This method performs an (internal) store toa register into the register list.
-	 * The register id must be in the demux bus
-	 */
-	private void registersInternalStore() {
-		registersList.get(demux.get()).internalStore();;
 	}
 
 	/**
