@@ -4,6 +4,8 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Scanner;
 
 import assembler.Assembler;
@@ -36,6 +38,8 @@ public class Architecture {
 	private ArrayList<String> commandsList;
 	private ArrayList<Register> registersList;
 
+	private final int INICIO_AREA_RESERVADA = 200;
+
 	/**
 	 * Instanciates all components in this architecture
 	 */
@@ -54,8 +58,11 @@ public class Architecture {
 		Flags = new Register(3, intbus1);
 		fillRegistersList();
 		ula = new Ula(intbus1, intbus2);
-		memorySize = 128;
+
+		memorySize = 256;
 		memory = new Memory(memorySize, extbus1);
+		fillReservedSpace();
+
 		demux = new Bus(); // this bus is used only for multiple register operations
 
 		fillCommandsList();
@@ -166,6 +173,31 @@ public class Architecture {
 	 * move regA regB (regA <- regB)
 	 */
 
+	protected void fillReservedSpace() {
+		List<Integer> imul = Arrays.asList(
+			12, -1, 2,
+			0, 2, 0,
+			17, 220,
+			1, 201, 1,
+			15, 210,
+			10, 1, 206,
+			9, 200, 0,
+			9, 201, 1,
+			9, 202, 2,
+			9, 203, 3,
+			9, 205, 5,
+			9, 206, -1,
+			9, 204, 4
+		);
+		for (int i = 0; i < imul.size(); i++) {
+			int endereco = INICIO_AREA_RESERVADA + 7 + i;
+			extbus1.put(endereco);
+			memory.store();
+			extbus1.put(imul.get(i));
+			memory.store();
+		}
+	}
+
 	/**
 	 * This method fills the commands list arraylist with all commands used in this
 	 * architecture
@@ -233,25 +265,6 @@ public class Architecture {
 		IR.read();
 		PC.store(); // now PC points to the first parameter (the first reg id)
 		// fim inc
-	}
-
-	public void multiplicarIntBus() {
-		if (intbus1.get() != 0 && intbus2.get() != 0) {
-			if (intbus1.get() > 0) {
-				for (int i = intbus1.get(); i > 1; i--) {
-					ula.internalStore(0);
-					ula.add();
-				}
-			} else {
-				ula.sub();
-				for (int i = intbus1.get(); i < -1; i++) {
-					ula.read(1);
-					ula.store(0);
-					ula.internalStore(1);
-					ula.sub();
-				}
-			}
-		}
 	}
 
 	public void addRegReg() {
@@ -455,7 +468,9 @@ public class Architecture {
 		demuxRegisterInternalRead();
 		ula.internalStore(1);
 
-		multiplicarIntBus();
+		extbus1.put(INICIO_AREA_RESERVADA + 8);
+		PC.store();
+
 		ula.read(1);
 		demuxRegisterInternalStore();
 
@@ -487,7 +502,9 @@ public class Architecture {
 		IR.internalRead();
 		ula.internalStore(1);
 
-		multiplicarIntBus();
+		extbus1.put(INICIO_AREA_RESERVADA + 8);
+		PC.store();
+
 		ula.read(1);
 		setStatusFlags(intbus1.get());
 
@@ -504,28 +521,46 @@ public class Architecture {
 
 		memory.read();
 		demux.put(extbus1.get());
+		demuxRegisterInternalRead();//primeiro parametro no intbus1
 
 		ula.inc();
 		ula.internalRead(1);
-		IR.internalRead();
+		IR.internalStore();
 		IR.read();
 		PC.store();
 
-		demuxRegisterInternalRead();
-		ula.store(0);
-		ula.internalRead(0);
-
 		memory.read();
 		demux.put(extbus1.get());
-		demuxRegisterInternalRead();
-		ula.store(1);
-
-		multiplicarIntBus();
-		ula.read(1);
-		setStatusFlags(intbus1.get());
-		demuxRegisterInternalStore();
 
 		incrementarPC();
+		salvarEstadoRegistradores();
+		// testar se os valores são negativos, ja que nao pode usar -1 pra iterar nesse
+		// caso
+		//RPG.internalStore(); // ta recebendo 9 por algum motivo
+		
+		demuxRegisterInternalRead();
+		RPG1.internalStore();
+
+
+		// Salvar destino multiplicacao
+		int regId = demux.get();
+		extbus1.put(INICIO_AREA_RESERVADA + 40);
+		memory.store();
+		extbus1.put(regId);
+		memory.store();
+
+		extbus1.put(INICIO_AREA_RESERVADA + 7);
+		PC.store();
+	}
+
+	public void salvarEstadoRegistradores() {
+		registersList.subList(0, 6).forEach(reg -> {
+			int endereco = INICIO_AREA_RESERVADA + registersList.indexOf(reg);
+			extbus1.put(endereco);
+			memory.store();
+			reg.read();
+			memory.store();
+		});
 	}
 
 	public void moveRegReg() {
@@ -555,12 +590,15 @@ public class Architecture {
 		memory.read();
 		memory.read();
 
-		RPG.store();
-
+		demux.put(extbus1.get());
 		incrementarPC();
+		extbus1.put(demux.get());
+		IR.store();
+		
+		PC.read();
 		memory.read();
 		demux.put(extbus1.get()); // points to the correct register
-		RPG.read();
+		IR.read();
 
 		demuxRegisterStore(); // performs an internal store for the register identified into demux bus
 
@@ -628,15 +666,17 @@ public class Architecture {
 		memory.read();
 		memory.store();
 		memory.read();
-		RPG.store();
-		RPG.internalRead();
-		ula.store(1);
+
+		IR.store();
+		IR.internalRead();
+		ula.internalStore(1);
 		ula.inc();
 		ula.read(1);
 		setStatusFlags(intbus1.get());
 
-		RPG.internalStore();
-		RPG.read();
+		ula.internalRead(1);
+		IR.internalStore();
+		IR.read();
 		memory.store();
 
 		incrementarPC();
